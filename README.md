@@ -7,7 +7,8 @@ It is built around multiple advertising accounts so you can rotate activity acro
 ## Features
 
 - Multi-bot support
-- Keyword-based targeting for players asking about kits
+- Cross-version compatibility via `mineflayer-viaproxy` (connects Minecraft 1.20 bot to 1.21.11+ servers)
+- Keyword-based targeting for players asking about kits (with rank prefix regex support)
 - Per-bot message pools for randomized DM text
 - In-terminal bot control with `join`, `leave`, `status`, and `help`
 - Auto reconnect handling for disconnects, restart messages, limbo, and join cooldowns
@@ -17,7 +18,7 @@ It is built around multiple advertising accounts so you can rotate activity acro
 
 Each bot:
 
-1. Connects to `play.6b6t.org`
+1. Connects to `play.6b6t.org` using `mineflayer-viaproxy` with `forceViaProxy: true`
 2. Logs in with `/login <password>`
 3. Walks through the join flow until it reaches the main server
 4. Watches chat for lines containing `kit`
@@ -25,7 +26,8 @@ Each bot:
 
 ## Requirements
 
-- Node.js 18+ recommended
+- Node.js 18+ recommended (Node 20 / 22 LTS recommended)
+- `cmake` & build tools (if using Node 25+ for native module compilation): `sudo apt install cmake build-essential`
 - npm
 - A cracked/offline account username for each bot
 - A password for each bot's `/login`
@@ -119,7 +121,8 @@ Players who have muted the bot and it triggers the `This player is ignoring you`
 ## Notes
 
 - The bot uses `auth: "offline"` in Mineflayer.
-- The target server, port, and version are hardcoded in `index.js`.
+- Protocol bridging is handled automatically using `mineflayer-viaproxy`.
+- The target server, port, and version are configured in `index.js`.
 - Startup joins are staggered by a delay so all bots do not connect at the exact same moment.
 
 
