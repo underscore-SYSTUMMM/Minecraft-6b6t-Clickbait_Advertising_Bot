@@ -1,5 +1,5 @@
 require('dotenv').config()
-const mineflayer = require('mineflayer')
+const { createBot } = require('mineflayer-viaproxy')
 const readline = require('readline')
 
 const HOST = "play.6b6t.org"
@@ -16,8 +16,8 @@ const BOT1 = {
   username: process.env.AD_BOT_USERNAME1,
   password: process.env.AD_BOT_PASSWORD1,
   messages: [
-      "Message 1",
-      "Message 2"
+    "Message 1",
+    "Message 2"
   ]
 }
 
@@ -109,8 +109,8 @@ function startBotFor(config, botNumber) {
     }
 
     if (bot) {
-      try { bot.setControlState("forward", false) } catch (_) {}
-      try { bot.setControlState("jump", false) } catch (_) {}
+      try { bot.setControlState("forward", false) } catch (_) { }
+      try { bot.setControlState("jump", false) } catch (_) { }
     }
   }
 
@@ -121,9 +121,9 @@ function startBotFor(config, botNumber) {
   function destroyBotInstance() {
     if (!bot) return
 
-    try { bot.removeAllListeners() } catch (_) {}
-    try { bot.quit("Resetting bot connection") } catch (_) {}
-    try { bot.end() } catch (_) {}
+    try { bot.removeAllListeners() } catch (_) { }
+    try { bot.quit("Resetting bot connection") } catch (_) { }
+    try { bot.end() } catch (_) { }
     bot = null
   }
 
@@ -163,8 +163,7 @@ function startBotFor(config, botNumber) {
 
   function tryStartMainServer(source) {
     if (movementStarted) return
-    if (!bot || !bot.player || !portalTraverseStarted) return
-    if (!mainServerTransitionSeen && !inLimbo) return
+    if (!bot || !bot.player) return
     if (bot.game?.gameMode === "spectator") return
 
     inLimbo = false
@@ -224,7 +223,7 @@ function startBotFor(config, botNumber) {
     sending = false
   }
 
-  function startBot() {
+  async function startBot() {
     if (!shouldBeConnected) {
       log(C.system, tag, "Join skipped because this bot is set to stay offline")
       return
@@ -248,13 +247,21 @@ function startBotFor(config, botNumber) {
     resetSessionState()
     log(C.system, tag, "Connecting...")
 
-    bot = mineflayer.createBot({
-      host: HOST,
-      port: PORT,
-      username: config.username,
-      auth: "offline",
-      version: VERSION
-    })
+    try {
+      bot = await createBot({
+        host: HOST,
+        port: PORT,
+        username: config.username,
+        auth: "offline",
+        version: VERSION,
+        forceViaProxy: true
+      })
+    } catch (err) {
+      isConnecting = false
+      log(C.error, tag, `Failed to create bot: ${err.message}`)
+      scheduleReconnect(RECONNECT_DELAY)
+      return
+    }
 
     bot.once("connect", () => {
       isConnecting = false
@@ -272,6 +279,7 @@ function startBotFor(config, botNumber) {
           portalWalkTimer = setTimeout(() => {
             if (bot) bot.setControlState("forward", false)
             portalWalkTimer = null
+            tryStartMainServer("timer")
           }, 15000)
         }, 2000)
         return
@@ -290,14 +298,14 @@ function startBotFor(config, botNumber) {
       if (/Server restarts in 5 seconds\./i.test(s)) {
         log(C.system, tag, "Server restarting - waiting 2 minutes before reconnect")
         scheduleReconnect(RESTART_RECONNECT_DELAY)
-        try { bot.quit() } catch (_) {}
+        try { bot.quit() } catch (_) { }
         return
       }
 
       if (/There is 1 second join cooldown protection left\./i.test(s)) {
         log(C.system, tag, "Join cooldown active - waiting 10 seconds before reconnect")
         scheduleReconnect(JOIN_COOLDOWN_DELAY)
-        try { bot.quit() } catch (_) {}
+        try { bot.quit() } catch (_) { }
         return
       }
 
@@ -312,8 +320,8 @@ function startBotFor(config, botNumber) {
         return
       }
 
-      if (movementStarted && /kit/i.test(s)) {
-        const messageMatch = s.match(/^(?:\[\w+\]\s+)?(\w+)\s*»\s*(.+)$/)
+      if (/kit/i.test(s)) {
+        const messageMatch = s.match(/^(?:\[[^\]]+\]\s*)*([a-zA-Z0-9_]{3,16})\s*»\s*(.+)$/)
         if (messageMatch) {
           enqueueDM(messageMatch[1])
         }
@@ -419,9 +427,9 @@ function startBotFor(config, botNumber) {
     log(C.system, tag, "Manual leave requested")
 
     if (bot) {
-      try { bot.removeAllListeners() } catch (_) {}
-      try { bot.quit("Manual leave") } catch (_) {}
-      try { bot.end() } catch (_) {}
+      try { bot.removeAllListeners() } catch (_) { }
+      try { bot.quit("Manual leave") } catch (_) { }
+      try { bot.end() } catch (_) { }
       bot = null
     }
   }

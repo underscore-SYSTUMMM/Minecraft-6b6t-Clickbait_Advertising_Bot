@@ -4,6 +4,7 @@
   "main": "index.js",
   "dependencies": {
     "dotenv": "^17.4.2",
-    "mineflayer": "^4.37.1"
+    "mineflayer": "^4.37.1",
+    "mineflayer-viaproxy": "^0.7.9"
   }
 }
